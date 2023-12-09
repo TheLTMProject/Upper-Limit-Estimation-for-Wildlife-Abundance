@@ -198,3 +198,81 @@ plt.hist(Y, bins=Bins,label="CT")
 
 ax.set_title("Histogram of Pixel Count\naccording to Habitability in the CT Map",fontsize=1.25*fs)
 plt.show()
+
+
+
+def DisLatLon(LatLon1, LatLon2):
+    '''Computes the surface distance (in km) between two coordinates on Earth'''
+    R = 6371  # Radius of the Earth in kilometers
+    #Convert latitudes and longitudes to radians
+    Lat1, Lon1, Lat2, Lon2 = map(math.radians, [LatLon1[0], LatLon1[1], LatLon2[0], LatLon2[1]])
+    #Calculate the differences between the latitudes and longitudes
+    dLat = Lat2 - Lat1
+    dLon = Lon2 - Lon1
+    #Apply the haversine formula
+    a = math.sin(dLat/2)**2 + math.cos(Lat1)*math.cos(Lat2)*math.sin(dLon/2)**2
+    c = 2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R*c
+
+'''Associates each signal to a pixel spot in the map'''
+import pickle
+
+CheckPointFile = "Check_HabMeanSig.pk1"
+CheckPointValue = "Check_ilatlonsig.pk1"
+
+LatLonSigs = np.load("Malaysia_LatLonSigsTime.npy",allow_pickle=True)
+HabLatLon = np.load("HabLatLon.npy")
+threshold = 6*DisLatLon(HabLatLon[0,0][1:],HabLatLon[1,1][1:])
+
+HabMeanSig = []
+Check_ilatlonsig = 0
+
+CheckPointCheck = "n" # "Fresh Start? [y/n]"
+if CheckPointCheck == "n":
+    with open(CheckPointFile, 'rb') as chk:
+        HabMeanSig = pickle.load(chk)
+    with open(CheckPointValue, 'rb') as chk:
+        Check_ilatlonsig = pickle.load(chk)
+
+for ilatlonsig, latlonsig in enumerate(LatLonSigs[Check_ilatlonsig:]): #For every signal in data
+    clear_output(), print(100*(ilatlonsig+1+Check_ilatlonsig)/len(LatLonSigs))
+    # print(HabMeanSig)
+
+    imin, jmin = min([(i,j) for i in range(np.shape(HabLatLon)[0]) #Find the corresponding indices 
+                     for j in range(np.shape(HabLatLon)[1])],         #that minmize distance in the map
+                        key=lambda x: DisLatLon(HabLatLon[x][1:],latlonsig[:2]) )
+
+    if DisLatLon(HabLatLon[imin, jmin][1:],latlonsig[:2]) < threshold: #If distance between signal and assigned pixel
+        HabMean = np.mean(HabLatLon[imin - 2 : imin + 3, jmin - 2 : jmin + 3], axis=(0, 1))[0] # is within five pixels
+        
+        if HabMean > 0: #If the mean habitability is non-zero (is within a subset of the map)
+            HabMeanSig.append([HabMean,latlonsig[2]]) #Associates mean habitability with signal in data
+    
+    with open(CheckPointFile, 'wb') as chk:
+        pickle.dump(HabMeanSig, chk)
+    with open(CheckPointValue, 'wb') as chk:
+        pickle.dump(ilatlonsig, chk)
+ 
+
+HabMeanSig = np.array(HabMeanSig)
+np.save("HabMeanSig.npy",HabMeanSig)
+np.save("Malaysia_HabMeanSig.npy",HabMeanSig)
+
+HabMeanSig = np.load("HabMeanSig.npy")
+KSWSHabMeanSig = np.load("KSWSHabMeanSig.npy")
+CTHabMeanSig = np.load("CTHabMeanSig.npy")
+np.shape(HabMeanSig), np.shape(KSWSHabMeanSig), np.shape(CTHabMeanSig)
+
+'''Maps HabMean values into ColGrad'''
+HabSig = HabMeanSig
+for ihabsig, habsig in enumerate(HabMeanSig): #For every signal in HabMeanSig
+    HabSig[ihabsig][0] = min([h for h in ColGrad[:,-1]], key=lambda h: abs(habsig[0] - h)) #Collects habitability  
+                                                                                    # from ColGrad closest to HabMean
+
+HabSig = HabSig[np.argsort(HabSig[:,0])] #Sorts according to habitability
+np.save("Malaysia_HabSig.npy",HabSig)
+
+HabSig = np.load("Malaysia_HabSig.npy")
+KSWSHabSig = np.load("KSWSHabSig.npy")
+CTHabSig = np.load("CTHabSig.npy")
+np.shape(HabSig), np.shape(KSWSHabSig), np.shape(CTHabSig) 
