@@ -82,6 +82,10 @@ for s in S[1:]:
     Norm = np.sum([ P_of_N[int(n)] * (n**sigma) for n in N[1:] ])
     Prob_NgivenS[:, int(s)] = [(P_of_N[int(n)] * (n**sigma) / Norm) for n in N]
 
+np.save("Prob_NgivenS"+str(rho)+".npy",Prob_NgivenS)
+Prob_NgivenS = np.load("Prob_NgivenS"+str(rho)+".npy")
+print(np.shape(Prob_NgivenS))
+
 '''Computes the expectation values for all possible signals'''
 N = range(0,len(Prob_NgivenS[:,0]))
 S = range(0,len(Prob_NgivenS[0]))
@@ -92,7 +96,8 @@ for s in S:
     Exp_NgivenS.append(Sum)
     # print("Expected value of N given S; < N | S =",s,"> =",Sum)
 np.save("Exp_NgivenS"+str(rho)+".npy",Exp_NgivenS)
-
+Exp_NgivenS = np.load("Exp_NgivenS"+str(rho)+".npy")
+(np.shape(Exp_NgivenS))
 
 
 '''Plots Prob_NgivenS'''
@@ -125,7 +130,7 @@ ax.tick_params(axis='x', labelsize=0.65*fs), ax.tick_params(axis='y', labelsize=
 ax.legend(fontsize=0.75*fs)
 ax.set_title("Conditional Probability of N individuals given S signals",fontsize=1.25*fs)
 
-# plt.savefig(Main + "Prob_NgivenS"+str(rho)+".png", dpi=600, bbox_inches='tight')
+plt.savefig(Main + "Prob_NgivenS"+str(rho)+".png", dpi=600, bbox_inches='tight')
 plt.show() # Show the plot
 
 '''Plots the expectation values for each possible signal from data.'''
@@ -160,7 +165,7 @@ ax.legend(fontsize=0.75*fs)
 ax.set_title("Conditional Expectation of N given S",fontsize=1.25*fs)
 
 # Show the plot
-# plt.savefig(Main + "Exp_NgivenS"+str(rho)+".png", dpi=600, bbox_inches='tight')
+plt.savefig(Main + "Exp_NgivenS"+str(rho)+".png", dpi=600, bbox_inches='tight')
 plt.show()
 
 
